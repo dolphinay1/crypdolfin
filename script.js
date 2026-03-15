@@ -492,4 +492,91 @@
     // Initial calculation
     calculateROI();
 
+    // ==========================================
+    // 15. ANALYTICS EVENT BINDINGS (if Firebase available)
+    // ==========================================
+    const hasAnalytics = typeof window.crypLogEvent === 'function';
+
+    if (hasAnalytics) {
+        const safeLog = (name, params) => {
+            try {
+                window.crypLogEvent(name, params);
+            } catch (e) {
+                console.error('Analytics log error', e);
+            }
+        };
+
+        // Hero CTAs
+        const heroPrimary = document.querySelector('.hero-cta-group .btn-primary[href="#services"]');
+        const heroSecondary = document.querySelector('.hero-cta-group .btn-ghost[href="#contact"]');
+
+        if (heroPrimary) {
+            heroPrimary.addEventListener('click', () => {
+                safeLog('cta_click', { location: 'hero', label: 'view_packages' });
+            });
+        }
+
+        if (heroSecondary) {
+            heroSecondary.addEventListener('click', () => {
+                safeLog('cta_click', { location: 'hero', label: 'start_now' });
+            });
+        }
+
+        // WhatsApp FAB
+        const fab = document.querySelector('.fab-wrapper[href^="https://wa.me"]');
+        if (fab) {
+            fab.addEventListener('click', () => {
+                safeLog('whatsapp_click', { location: 'fab' });
+            });
+        }
+
+        // CTA section buttons
+        const ctaWhatsApp = document.querySelector('.cta-buttons .btn-primary[href^="https://wa.me"]');
+        const ctaTelegram = document.querySelector('.cta-buttons .btn-ghost[href^="https://t.me"]');
+
+        if (ctaWhatsApp) {
+            ctaWhatsApp.addEventListener('click', () => {
+                safeLog('whatsapp_click', { location: 'cta_section' });
+            });
+        }
+
+        if (ctaTelegram) {
+            ctaTelegram.addEventListener('click', () => {
+                safeLog('telegram_click', { location: 'cta_section' });
+            });
+        }
+
+        // Contact cards
+        document.querySelectorAll('.contact-card-item').forEach(card => {
+            card.addEventListener('click', () => {
+                const href = card.getAttribute('href') || '';
+                let channel = 'other';
+                if (href.startsWith('mailto:')) channel = 'email';
+                else if (href.includes('twitter.com') || href.includes('x.com')) channel = 'x';
+                else if (href.includes('t.me')) channel = 'telegram';
+                else if (href.includes('instagram.com')) channel = 'instagram';
+
+                safeLog('contact_click', { channel });
+            });
+        });
+
+        // ROI calculator value changes (coarse-grained)
+        if (roiTraffic && roiConversion && roiAvgSale) {
+            const roiInputs = [roiTraffic, roiConversion, roiAvgSale];
+            let roiTimeout;
+            roiInputs.forEach(input => {
+                input.addEventListener('change', () => {
+                    clearTimeout(roiTimeout);
+                    roiTimeout = setTimeout(() => {
+                        safeLog('roi_calculated', {
+                            traffic: parseFloat(roiTraffic.value) || 0,
+                            conversion_percent: parseFloat(roiConversion.value) || 0,
+                            avg_sale_try: parseFloat(roiAvgSale.value) || 0
+                        });
+                    }, 500);
+                });
+            });
+        }
+    }
+
 })();
